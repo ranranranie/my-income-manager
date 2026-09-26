@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../data/income_database.dart';
 import '../models/income_models.dart';
 
@@ -36,6 +37,8 @@ class HomePage extends StatelessWidget {
             .where((type) => records.any((record) => record.type == type))
             .toList();
 
+        // Keep the existing annual aggregation: each month contains the
+        // recorded amount for each type and its height is based on real totals.
         final monthlyByType = List.generate(
           12,
           (monthIndex) => <IncomeType, int>{
@@ -57,26 +60,26 @@ class HomePage extends StatelessWidget {
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxHeight < 650;
-            final content = _HomeContent(
-              year: year,
-              currentMonth: now.month,
-              records: records,
-              presentTypes: presentTypes,
-              monthlyByType: monthlyByType,
-              monthlyTotals: monthlyTotals,
-              maxMonthly: maxMonthly,
-              compact: compact,
-              onOpenHistory: onOpenHistory,
-            );
+            final textScale = MediaQuery.textScalerOf(context).scale(1);
+            final compact = constraints.maxHeight < 700 || textScale > 1.1;
 
-            // Normal Android portrait screens use the available height without
-            // scrolling. Small screens and large text scales can scroll safely.
             return SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(18, compact ? 10 : 16, 18, 10),
+              padding: EdgeInsets.fromLTRB(18, compact ? 10 : 14, 18, 10),
               child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight - 20),
-                child: content,
+                constraints: BoxConstraints(
+                  minHeight: (constraints.maxHeight - 20).clamp(0, double.infinity),
+                ),
+                child: _HomeContent(
+                  year: year,
+                  currentMonth: now.month,
+                  records: records,
+                  presentTypes: presentTypes,
+                  monthlyByType: monthlyByType,
+                  monthlyTotals: monthlyTotals,
+                  maxMonthly: maxMonthly,
+                  compact: compact,
+                  onOpenHistory: onOpenHistory,
+                ),
               ),
             );
           },
@@ -111,30 +114,26 @@ class _HomeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gap = compact ? 8.0 : 12.0;
+    final sectionGap = compact ? 11.0 : 16.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          year.toString() + '년 나의 수입',
-          style: Theme.of(context)
-              .textTheme
-              .headlineSmall
-              ?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        SizedBox(height: compact ? 2 : 4),
+        _Header(year: year, compact: compact),
+        SizedBox(height: sectionGap),
+        _SectionTitle(title: '올해의 수입'),
+        const SizedBox(height: 3),
         Text(
           presentTypes.isEmpty
               ? '올해 기록된 수입이 아직 없어요.'
-              : '올해 ' +
-                  presentTypes.length.toString() +
-                  '가지 유형의 수입이 있었어요.',
+              : presentTypes.length.toString() + '가지 유형의 수입이 있어요.',
+          style: Theme.of(context).textTheme.bodySmall,
         ),
         if (presentTypes.isNotEmpty) ...[
           SizedBox(height: compact ? 6 : 8),
           Wrap(
             spacing: 6,
-            runSpacing: 4,
+            runSpacing: compact ? 3 : 5,
             children: presentTypes
                 .map(
                   (type) => _TypeChip(
@@ -146,19 +145,8 @@ class _HomeContent extends StatelessWidget {
                 .toList(),
           ),
         ],
-        SizedBox(height: gap),
-        Text(
-          year.toString() + '년 수입 흐름',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          '막대 하나가 한 달의 수입이며, 색은 수입 유형을 나타냅니다.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        SizedBox(height: sectionGap),
+        _SectionTitle(title: year.toString() + '년 수입 흐름'),
         SizedBox(height: compact ? 5 : 7),
         _IncomeFlowChart(
           currentMonth: currentMonth,
@@ -171,8 +159,8 @@ class _HomeContent extends StatelessWidget {
         if (presentTypes.isNotEmpty) ...[
           SizedBox(height: compact ? 5 : 7),
           Wrap(
-            spacing: 10,
-            runSpacing: 3,
+            spacing: 9,
+            runSpacing: 2,
             children: presentTypes
                 .map(
                   (type) => _LegendItem(
@@ -183,36 +171,21 @@ class _HomeContent extends StatelessWidget {
                 .toList(),
           ),
         ],
-        SizedBox(height: gap),
+        SizedBox(height: sectionGap),
         Row(
           children: [
-            Expanded(
-              child: Text(
-                '최근 수입',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ),
+            const Expanded(child: _SectionTitle(title: '최근 수입')),
             TextButton(
               onPressed: onOpenHistory,
               style: TextButton.styleFrom(
                 visualDensity: VisualDensity.compact,
-                minimumSize: const Size(48, 32),
+                minimumSize: const Size(64, 40),
               ),
-              child: const Text('더보기'),
+              child: const Text('전체 보기'),
             ),
           ],
         ),
-        if (records.isEmpty)
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: compact ? 12 : 18),
-            child: const Center(
-              child: Text('중앙 + 버튼으로 첫 수입을 기록할 수 있어요.'),
-            ),
-          )
-        else
+        if (records.isNotEmpty)
           ...records.take(3).map(
                 (record) => _RecentIncomeRow(
                   record: record,
@@ -220,6 +193,52 @@ class _HomeContent extends StatelessWidget {
                 ),
               ),
       ],
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.year, required this.compact});
+
+  final int year;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'My Income Manager',
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        SizedBox(height: compact ? 1 : 2),
+        Text(
+          year.toString() + '년',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: Theme.of(context)
+          .textTheme
+          .titleMedium
+          ?.copyWith(fontWeight: FontWeight.bold),
     );
   }
 }
@@ -239,17 +258,14 @@ class _TypeChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 8 : 9,
+        horizontal: compact ? 8 : 10,
         vertical: compact ? 3 : 4,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withValues(alpha: 0.11),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
-        type.label,
-        style: Theme.of(context).textTheme.labelMedium,
-      ),
+      child: Text(type.label, style: Theme.of(context).textTheme.labelMedium),
     );
   }
 }
@@ -273,13 +289,15 @@ class _IncomeFlowChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chartHeight = compact ? 122.0 : 148.0;
+    final chartHeight = compact ? 116.0 : 142.0;
+
     return Container(
       height: chartHeight,
-      padding: const EdgeInsets.fromLTRB(8, 10, 8, 6),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(6, 8, 6, 5),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: Theme.of(context).colorScheme.outlineVariant,
         ),
@@ -290,6 +308,7 @@ class _IncomeFlowChart extends StatelessWidget {
           final month = index + 1;
           final isFuture = month > currentMonth;
           final hasIncome = monthlyTotals[index] > 0;
+
           return Expanded(
             child: _MonthBar(
               month: month,
@@ -357,8 +376,8 @@ class _MonthBar extends StatelessWidget {
                         ),
                       )
                     : Container(
-                        width: 4,
-                        height: 4,
+                        width: 5,
+                        height: 5,
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.outlineVariant,
                           shape: BoxShape.circle,
@@ -366,13 +385,13 @@ class _MonthBar extends StatelessWidget {
                       ),
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
         Text(
           month.toString(),
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: isFuture
                     ? Theme.of(context).colorScheme.outline
-                    : null,
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
         ),
       ],
@@ -385,9 +404,12 @@ class _FutureMonthMarker extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 3,
-      height: 18,
+      height: 16,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.45),
+        color: Theme.of(context)
+            .colorScheme
+            .outlineVariant
+            .withValues(alpha: 0.38),
         borderRadius: BorderRadius.circular(2),
       ),
     );
@@ -396,6 +418,7 @@ class _FutureMonthMarker extends StatelessWidget {
 
 class _LegendItem extends StatelessWidget {
   const _LegendItem({required this.label, required this.color});
+
   final String label;
   final Color color;
 
@@ -418,19 +441,31 @@ class _LegendItem extends StatelessWidget {
 
 class _RecentIncomeRow extends StatelessWidget {
   const _RecentIncomeRow({required this.record, required this.compact});
+
   final IncomeRecord record;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final date = record.date.month.toString() + '.' + record.date.day.toString();
+    final source = record.source?.trim();
+    final primary = source == null || source.isEmpty ? record.type.label : source;
+    final secondary = record.account == null || record.account!.trim().isEmpty
+        ? record.type.label
+        : record.type.label + ' · ' + record.account!.trim();
+
     return Padding(
       padding: EdgeInsets.symmetric(vertical: compact ? 3 : 5),
       child: Row(
         children: [
           SizedBox(
-            width: 36,
-            child: Text(date, style: Theme.of(context).textTheme.labelSmall),
+            width: 38,
+            child: Text(
+              date,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
           ),
           Expanded(
             child: Column(
@@ -438,24 +473,47 @@ class _RecentIncomeRow extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  (record.source ?? record.type.label) + ' · ' + record.type.label,
+                  primary,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
-                if (record.account != null)
-                  Text(
-                    record.account!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+                Text(
+                  secondary,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
               ],
             ),
           ),
           const SizedBox(width: 8),
-          Text('₩' + record.amount.toString()),
+          Flexible(
+            child: Text(
+              _formatWon(record.amount),
+              maxLines: 1,
+              overflow: TextOverflow.fade,
+              softWrap: false,
+              textAlign: TextAlign.right,
+            ),
+          ),
         ],
       ),
     );
   }
+}
+
+String _formatWon(int amount) {
+  final digits = amount.abs().toString();
+  final buffer = StringBuffer();
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(',');
+    buffer.write(digits[i]);
+  }
+  return (amount < 0 ? '-' : '') + buffer.toString() + '원';
 }
