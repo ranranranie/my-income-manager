@@ -3,11 +3,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../data/income_database.dart';
 import '../models/income_models.dart';
+import '../settings/amount_visibility.dart';
 import '../report/income_report.dart';
 
 class ReportPage extends StatefulWidget {
-  const ReportPage({super.key, required this.revision});
+  const ReportPage({super.key, required this.revision, required this.showAmounts});
   final int revision;
+  final bool showAmounts;
 
   @override
   State<ReportPage> createState() => _ReportPageState();
@@ -71,17 +73,17 @@ class _ReportPageState extends State<ReportPage> {
             if (selectedRecords.isEmpty)
               _EmptyReport(year: selectedYear)
             else ...[
-              _AnnualSummary(records: selectedRecords),
+              _AnnualSummary(records: selectedRecords, showAmounts: widget.showAmounts),
               const SizedBox(height: 18),
-              _TypeComposition(records: selectedRecords),
+              _TypeComposition(records: selectedRecords, showAmounts: widget.showAmounts),
               const SizedBox(height: 18),
-              _SourceComposition(records: selectedRecords),
+              _SourceComposition(records: selectedRecords, showAmounts: widget.showAmounts),
               const SizedBox(height: 18),
-              _FinancialIncome(records: selectedRecords),
+              _FinancialIncome(records: selectedRecords, showAmounts: widget.showAmounts),
             ],
             if (allRecords.isNotEmpty) ...[
               const SizedBox(height: 18),
-              _IncomeHistory(records: allRecords),
+              _IncomeHistory(records: allRecords, showAmounts: widget.showAmounts),
             ],
           ],
         );
@@ -137,8 +139,9 @@ class _YearPicker extends StatelessWidget {
 }
 
 class _AnnualSummary extends StatelessWidget {
-  const _AnnualSummary({required this.records});
+  const _AnnualSummary({required this.records, required this.showAmounts});
   final List<IncomeRecord> records;
+  final bool showAmounts;
 
   @override
   Widget build(BuildContext context) {
@@ -153,12 +156,12 @@ class _AnnualSummary extends StatelessWidget {
         children: [
           Text('연간 총수입', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           const SizedBox(height: 5),
-          _AmountText(_won(total), style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+          _AmountText(displayWon(total, showAmounts: showAmounts), style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 18),
           Row(children: [
             Expanded(child: _Metric(label: '기록 월 수', value: '$months개월')),
             const SizedBox(width: 16),
-            Expanded(child: _Metric(label: '월평균 수입', value: _won(average))),
+            Expanded(child: _Metric(label: '월평균 수입', value: displayWon(average, showAmounts: showAmounts))),
           ]),
         ],
       ),
@@ -167,8 +170,9 @@ class _AnnualSummary extends StatelessWidget {
 }
 
 class _TypeComposition extends StatelessWidget {
-  const _TypeComposition({required this.records});
+  const _TypeComposition({required this.records, required this.showAmounts});
   final List<IncomeRecord> records;
+  final bool showAmounts;
 
   @override
   Widget build(BuildContext context) {
@@ -181,12 +185,12 @@ class _TypeComposition extends StatelessWidget {
       title: '수입 유형별 구성',
       child: Column(
         children: [
-          Center(child: _IncomeDonut(entries: entries, total: total)),
+          Center(child: _IncomeDonut(entries: entries, total: total, showAmounts: showAmounts)),
           const SizedBox(height: 18),
           for (final entry in entries)
-            _CompositionRow(markerColor: _typeColor(entry.key), label: entry.key.label, amount: entry.value, ratio: IncomeReport.ratio(entry.value, total)),
+            _CompositionRow(markerColor: _typeColor(entry.key), label: entry.key.label, amount: entry.value, ratio: IncomeReport.ratio(entry.value, total), showAmounts: showAmounts),
           const Divider(height: 24),
-          _SupportingValue(label: '월급 외 수입', amount: nonSalary, ratio: IncomeReport.ratio(nonSalary, total)),
+          _SupportingValue(label: '월급 외 수입', amount: nonSalary, ratio: IncomeReport.ratio(nonSalary, total), showAmounts: showAmounts),
         ],
       ),
     );
@@ -194,9 +198,10 @@ class _TypeComposition extends StatelessWidget {
 }
 
 class _IncomeDonut extends StatelessWidget {
-  const _IncomeDonut({required this.entries, required this.total});
+  const _IncomeDonut({required this.entries, required this.total, required this.showAmounts});
   final List<MapEntry<IncomeType, int>> entries;
   final int total;
+  final bool showAmounts;
 
   @override
   Widget build(BuildContext context) {
@@ -207,7 +212,7 @@ class _IncomeDonut extends StatelessWidget {
         Center(child: SizedBox(width: 112, child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text('총 수입', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           const SizedBox(height: 4),
-          _AmountText(_won(total), textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          _AmountText(displayWon(total, showAmounts: showAmounts), textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         ]))),
       ]),
     );
@@ -239,8 +244,9 @@ class _DonutPainter extends CustomPainter {
 }
 
 class _SourceComposition extends StatelessWidget {
-  const _SourceComposition({required this.records});
+  const _SourceComposition({required this.records, required this.showAmounts});
   final List<IncomeRecord> records;
+  final bool showAmounts;
 
   @override
   Widget build(BuildContext context) {
@@ -260,9 +266,9 @@ class _SourceComposition extends StatelessWidget {
           const Align(alignment: Alignment.centerLeft, child: Text('수입원이 입력된 기록이 없습니다.'))
         else ...[
           for (final entry in visible)
-            _SourceRow(source: entry.key, typeLabel: _sourceTypeLabel(records, entry.key), amount: entry.value, ratio: IncomeReport.ratio(entry.value, total)),
+            _SourceRow(source: entry.key, typeLabel: _sourceTypeLabel(records, entry.key), amount: entry.value, ratio: IncomeReport.ratio(entry.value, total), showAmounts: showAmounts),
           if (otherAmount > 0)
-            _SourceRow(source: '기타 수입원', typeLabel: '여러 유형', amount: otherAmount, ratio: IncomeReport.ratio(otherAmount, total)),
+            _SourceRow(source: '기타 수입원', typeLabel: '여러 유형', amount: otherAmount, ratio: IncomeReport.ratio(otherAmount, total), showAmounts: showAmounts),
         ],
       ]),
     );
@@ -278,8 +284,9 @@ String _sourceTypeLabel(List<IncomeRecord> records, String source) {
 }
 
 class _FinancialIncome extends StatelessWidget {
-  const _FinancialIncome({required this.records});
+  const _FinancialIncome({required this.records, required this.showAmounts});
   final List<IncomeRecord> records;
+  final bool showAmounts;
 
   @override
   Widget build(BuildContext context) {
@@ -292,12 +299,12 @@ class _FinancialIncome extends StatelessWidget {
     return _ReportSection(
       title: '금융소득',
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _AmountText(_won(financial), style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
+        _AmountText(displayWon(financial, showAmounts: showAmounts), style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 3),
         Text('전체 수입의 '+_percent(IncomeReport.ratio(financial, total)), style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height: 12),
-        _CompositionRow(label: '배당', amount: dividend, ratio: IncomeReport.ratio(dividend, total)),
-        _CompositionRow(label: '이자', amount: interest, ratio: IncomeReport.ratio(interest, total)),
+        _CompositionRow(label: '배당', amount: dividend, ratio: IncomeReport.ratio(dividend, total), showAmounts: showAmounts),
+        _CompositionRow(label: '이자', amount: interest, ratio: IncomeReport.ratio(interest, total), showAmounts: showAmounts),
         const SizedBox(height: 8),
         Text('금융소득은 배당과 이자의 합계입니다.', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ]),
@@ -306,8 +313,9 @@ class _FinancialIncome extends StatelessWidget {
 }
 
 class _IncomeHistory extends StatelessWidget {
-  const _IncomeHistory({required this.records});
+  const _IncomeHistory({required this.records, required this.showAmounts});
   final List<IncomeRecord> records;
+  final bool showAmounts;
 
   @override
   Widget build(BuildContext context) {
@@ -320,21 +328,22 @@ class _IncomeHistory extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('연도별 총수입', style: Theme.of(context).textTheme.labelLarge),
         const SizedBox(height: 10),
-        for (final entry in yearly) _HistoryRow(year: entry.key, amount: entry.value, fraction: maxYearly == 0 ? 0 : entry.value / maxYearly),
+        for (final entry in yearly) _HistoryRow(year: entry.key, amount: entry.value, fraction: maxYearly == 0 ? 0 : entry.value / maxYearly, showAmounts: showAmounts),
         const Divider(height: 26),
         Text('기록 시작 후 누적 수입', style: Theme.of(context).textTheme.labelLarge),
         const SizedBox(height: 5),
-        _AmountText(_won(cumulative), style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
+        _AmountText(displayWon(cumulative, showAmounts: showAmounts), style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
       ]),
     );
   }
 }
 
 class _HistoryRow extends StatelessWidget {
-  const _HistoryRow({required this.year, required this.amount, required this.fraction});
+  const _HistoryRow({required this.year, required this.amount, required this.fraction, required this.showAmounts});
   final int year;
   final int amount;
   final double fraction;
+  final bool showAmounts;
 
   @override
   Widget build(BuildContext context) {
@@ -344,7 +353,7 @@ class _HistoryRow extends StatelessWidget {
         Row(children: [
           Text(year.toString(), style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
           const SizedBox(width: 12),
-          Expanded(child: _AmountText(_won(amount), textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodyMedium)),
+          Expanded(child: _AmountText(displayWon(amount, showAmounts: showAmounts), textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodyMedium)),
         ]),
         const SizedBox(height: 6),
         ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(minHeight: 8, value: fraction.clamp(0.0, 1.0).toDouble())),
@@ -399,11 +408,12 @@ class _Metric extends StatelessWidget {
 }
 
 class _CompositionRow extends StatelessWidget {
-  const _CompositionRow({this.markerColor, required this.label, required this.amount, required this.ratio});
+  const _CompositionRow({this.markerColor, required this.label, required this.amount, required this.ratio, required this.showAmounts});
   final Color? markerColor;
   final String label;
   final int amount;
   final double ratio;
+  final bool showAmounts;
 
   @override
   Widget build(BuildContext context) {
@@ -416,7 +426,7 @@ class _CompositionRow extends StatelessWidget {
         ],
         Expanded(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600))),
         const SizedBox(width: 8),
-        Flexible(child: _AmountText(_won(amount), textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodyMedium)),
+        Flexible(child: _AmountText(displayWon(amount, showAmounts: showAmounts), textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodyMedium)),
         const SizedBox(width: 6),
         SizedBox(width: 48, child: Text(_percent(ratio), textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
       ]),
@@ -425,11 +435,12 @@ class _CompositionRow extends StatelessWidget {
 }
 
 class _SourceRow extends StatelessWidget {
-  const _SourceRow({required this.source, required this.typeLabel, required this.amount, required this.ratio});
+  const _SourceRow({required this.source, required this.typeLabel, required this.amount, required this.ratio, required this.showAmounts});
   final String source;
   final String typeLabel;
   final int amount;
   final double ratio;
+  final bool showAmounts;
 
   @override
   Widget build(BuildContext context) {
@@ -441,7 +452,7 @@ class _SourceRow extends StatelessWidget {
           if (typeLabel.isNotEmpty) Text(typeLabel, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ])),
         const SizedBox(width: 8),
-        Expanded(flex: 4, child: _AmountText(_won(amount), textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodyMedium)),
+        Expanded(flex: 4, child: _AmountText(displayWon(amount, showAmounts: showAmounts), textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodyMedium)),
         const SizedBox(width: 6),
         SizedBox(width: 48, child: Text(_percent(ratio), textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant))),
       ]),
@@ -450,16 +461,17 @@ class _SourceRow extends StatelessWidget {
 }
 
 class _SupportingValue extends StatelessWidget {
-  const _SupportingValue({required this.label, required this.amount, required this.ratio});
+  const _SupportingValue({required this.label, required this.amount, required this.ratio, required this.showAmounts});
   final String label;
   final int amount;
   final double ratio;
+  final bool showAmounts;
 
   @override
   Widget build(BuildContext context) {
     return Wrap(spacing: 8, runSpacing: 3, children: [
       Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
-      Text(_won(amount)),
+      Text(displayWon(amount, showAmounts: showAmounts)),
       Text('전체의 '+_percent(ratio), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
     ]);
   }

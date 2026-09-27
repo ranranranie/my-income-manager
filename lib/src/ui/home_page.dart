@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../data/income_database.dart';
 import '../models/income_models.dart';
+import '../settings/amount_visibility.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({
     super.key,
     required this.revision,
     required this.onOpenHistory,
+    required this.showAmounts,
   });
 
   final int revision;
   final VoidCallback onOpenHistory;
+  final bool showAmounts;
 
   static const _typeColors = <IncomeType, Color>{
     IncomeType.salary: Color(0xff806d4f),
@@ -79,6 +82,7 @@ class HomePage extends StatelessWidget {
                   maxMonthly: maxMonthly,
                   compact: compact,
                   onOpenHistory: onOpenHistory,
+                  showAmounts: showAmounts,
                 ),
               ),
             );
@@ -100,6 +104,7 @@ class _HomeContent extends StatelessWidget {
     required this.maxMonthly,
     required this.compact,
     required this.onOpenHistory,
+    required this.showAmounts,
   });
 
   final int year;
@@ -111,6 +116,7 @@ class _HomeContent extends StatelessWidget {
   final int maxMonthly;
   final bool compact;
   final VoidCallback onOpenHistory;
+  final bool showAmounts;
 
   @override
   Widget build(BuildContext context) {
@@ -190,6 +196,7 @@ class _HomeContent extends StatelessWidget {
                 (record) => _RecentIncomeRow(
                   record: record,
                   compact: compact,
+                  showAmounts: showAmounts,
                 ),
               ),
       ],
@@ -440,10 +447,11 @@ class _LegendItem extends StatelessWidget {
 }
 
 class _RecentIncomeRow extends StatelessWidget {
-  const _RecentIncomeRow({required this.record, required this.compact});
+  const _RecentIncomeRow({required this.record, required this.compact, required this.showAmounts});
 
   final IncomeRecord record;
   final bool compact;
+  final bool showAmounts;
 
   @override
   Widget build(BuildContext context) {
@@ -495,7 +503,7 @@ class _RecentIncomeRow extends StatelessWidget {
           const SizedBox(width: 8),
           Flexible(
             child: Text(
-              _formatWon(record.amount),
+              displayWon(record.amount, showAmounts: showAmounts),
               maxLines: 1,
               overflow: TextOverflow.fade,
               softWrap: false,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/income_database.dart';
 import '../models/income_models.dart';
+import '../settings/amount_visibility.dart';
 import 'income_editor.dart';
 
 class HistoryPage extends StatefulWidget {
@@ -9,10 +10,12 @@ class HistoryPage extends StatefulWidget {
     super.key,
     required this.revision,
     required this.onChanged,
+    required this.showAmounts,
   });
 
   final int revision;
   final VoidCallback onChanged;
+  final bool showAmounts;
 
   @override
   State<HistoryPage> createState() => _HistoryPageState();
@@ -156,6 +159,7 @@ class _HistoryPageState extends State<HistoryPage> {
                               typeColors: _typeColors,
                               onOpen: _openRecord,
                               onDelete: _deleteRecord,
+                              showAmounts: widget.showAmounts,
                             );
                           },
                         ),
@@ -244,12 +248,14 @@ class _MonthSection extends StatelessWidget {
     required this.typeColors,
     required this.onOpen,
     required this.onDelete,
+    required this.showAmounts,
   });
 
   final _MonthGroup group;
   final Map<IncomeType, Color> typeColors;
   final ValueChanged<IncomeRecord> onOpen;
   final ValueChanged<IncomeRecord> onDelete;
+  final bool showAmounts;
 
   @override
   Widget build(BuildContext context) {
@@ -283,6 +289,7 @@ class _MonthSection extends StatelessWidget {
               color: typeColors[record.type]!,
               onTap: () => onOpen(record),
               onLongPress: () => onDelete(record),
+              showAmounts: showAmounts,
             ),
         ],
       ),
@@ -296,12 +303,14 @@ class _IncomeHistoryRow extends StatelessWidget {
     required this.color,
     required this.onTap,
     required this.onLongPress,
+    required this.showAmounts,
   });
 
   final IncomeRecord record;
   final Color color;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
+  final bool showAmounts;
 
   @override
   Widget build(BuildContext context) {
@@ -394,7 +403,7 @@ class _IncomeHistoryRow extends StatelessWidget {
             ConstrainedBox(
               constraints: const BoxConstraints(minWidth: 72),
               child: Text(
-                _formatWon(record.amount),
+                displayWon(record.amount, showAmounts: showAmounts),
                 maxLines: 1,
                 softWrap: false,
                 textAlign: TextAlign.right,
