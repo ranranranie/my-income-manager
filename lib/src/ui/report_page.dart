@@ -420,7 +420,7 @@ class _CompositionRow extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          LinearProgressIndicator(value: ratio.clamp(0.0, 1.0)),
+          LinearProgressIndicator(value: ratio.clamp(0.0, 1.0).toDouble()),
         ],
       ),
     );

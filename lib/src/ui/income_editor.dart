@@ -86,6 +86,7 @@ class _IncomeEditorState extends State<IncomeEditor> {
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
+    if (!mounted) return;
     if (picked != null) setState(() => date = picked);
   }
 
@@ -100,7 +101,9 @@ class _IncomeEditorState extends State<IncomeEditor> {
       date: date,
       type: type,
       source: source.text.trim().isEmpty ? null : source.text.trim(),
-      account: account.text.trim().isEmpty ? null : account.text.trim(),
+      account: accountVisible && account.text.trim().isNotEmpty
+          ? account.text.trim()
+          : null,
       memo: memo.text.trim().isEmpty ? null : memo.text.trim(),
       createdAt: widget.record?.createdAt ?? now,
       updatedAt: now,

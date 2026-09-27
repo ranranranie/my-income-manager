@@ -67,7 +67,7 @@ class HomePage extends StatelessWidget {
               padding: EdgeInsets.fromLTRB(18, compact ? 10 : 14, 18, 10),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: (constraints.maxHeight - 20).clamp(0, double.infinity),
+                  minHeight: (constraints.maxHeight - 20).clamp(0.0, double.infinity).toDouble(),
                 ),
                 child: _HomeContent(
                   year: year,
@@ -357,7 +357,7 @@ class _MonthBar extends StatelessWidget {
                 ? _FutureMonthMarker()
                 : hasIncome
                     ? FractionallySizedBox(
-                        heightFactor: fraction.clamp(0.08, 1.0),
+                        heightFactor: fraction.clamp(0.08, 1.0).toDouble(),
                         widthFactor: 0.62,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(4),
