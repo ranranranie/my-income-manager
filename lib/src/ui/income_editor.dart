@@ -137,6 +137,37 @@ class _IncomeEditorState extends State<IncomeEditor> {
     return false;
   }
 
+  Future<void> _deleteRecord() async {
+    if (!isEditing || saving || widget.record?.id == null) return;
+    FocusScope.of(context).unfocus();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('수입 기록을 삭제할까요?'),
+        content: const Text('삭제한 기록은 목록에서 제거됩니다.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+
+    setState(() => saving = true);
+    try {
+      await IncomeDatabase.instance.delete(widget.record!.id!);
+      if (mounted) Navigator.pop(context, true);
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
   Future<void> _pickDate() async {
     if (saving) return;
     FocusScope.of(context).unfocus();
@@ -329,6 +360,19 @@ class _IncomeEditorState extends State<IncomeEditor> {
                       ),
                     ),
                     const SizedBox(height: 8),
+                    if (isEditing) ...[
+                      const SizedBox(height: 12),
+                      Center(
+                        child: TextButton(
+                          onPressed: saving ? null : _deleteRecord,
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(context).colorScheme.error,
+                          ),
+                          child: const Text('수입 기록 삭제'),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                    ],
                   ],
                 ),
               ),
