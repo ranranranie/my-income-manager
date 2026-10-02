@@ -44,8 +44,6 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final currentYear = DateTime.now().year;
-
     return FutureBuilder<List<IncomeRecord>>(
       key: ValueKey(widget.revision),
       future: IncomeDatabase.instance.all(),
@@ -79,26 +77,19 @@ class _HistoryPageState extends State<HistoryPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'My Income Manager',
+                    '내역',
                     style: Theme.of(context)
                         .textTheme
-                        .titleLarge
+                        .headlineSmall
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    currentYear.toString() + '년',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   TextField(
                     controller: _searchController,
                     onChanged: (value) => setState(() => query = value),
                     textInputAction: TextInputAction.search,
                     decoration: InputDecoration(
-                      hintText: '회사명, 종목, 메모로 검색',
+                      hintText: '수입원, 계좌, 메모 검색',
                       prefixIcon: const Icon(Icons.search, size: 20),
                       suffixIcon: query.isEmpty
                           ? null
@@ -142,11 +133,12 @@ class _HistoryPageState extends State<HistoryPage> {
             Expanded(
               child: allRecords.isEmpty
                   ? const _HistoryEmptyState(
-                      title: '아직 기록된 수입이 없어요.',
+                      title: '아직 수입 기록이 없습니다.',
+                      detail: '수입을 기록하면 여기에서 확인할 수 있습니다.',
                     )
                   : records.isEmpty && hasActiveCondition
                       ? const _HistoryEmptyState(
-                          title: '조건에 맞는 수입 기록이 없어요.',
+                          title: '조건에 맞는 수입 기록이 없습니다.',
                           detail: '다른 검색어를 사용하거나 필터를 변경해보세요.',
                         )
                       : ListView.builder(
@@ -401,7 +393,7 @@ class _IncomeHistoryRow extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 72),
+              constraints: const BoxConstraints(minWidth: 72, maxWidth: 118),
               child: Text(
                 displayWon(record.amount, showAmounts: showAmounts),
                 maxLines: 1,
@@ -483,12 +475,3 @@ String _weekdayLabel(int weekday) => switch (weekday) {
       _ => '',
     };
 
-String _formatWon(int amount) {
-  final digits = amount.abs().toString();
-  final buffer = StringBuffer();
-  for (var i = 0; i < digits.length; i++) {
-    if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(',');
-    buffer.write(digits[i]);
-  }
-  return (amount < 0 ? '-' : '') + buffer.toString() + '원';
-}
