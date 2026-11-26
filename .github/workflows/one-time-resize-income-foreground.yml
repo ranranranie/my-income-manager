@@ -1,0 +1,63 @@
+name: One-time Resize Income Foreground
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  resize-foreground:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/income-foundation
+
+      - name: Install ImageMagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
+
+      - name: Generate adaptive foreground icons
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="android/app/launcher_source/my_income_manager_icon_transfer_256.webp"
+          test -f "$SRC"
+          mkdir -p android/app/src/main/res/mipmap-mdpi android/app/src/main/res/mipmap-hdpi android/app/src/main/res/mipmap-xhdpi android/app/src/main/res/mipmap-xxhdpi android/app/src/main/res/mipmap-xxxhdpi
+
+          # Manager Series adaptive icon structure:
+          # 108dp foreground canvas, density-scaled to 108/162/216/324/432 px.
+          # Preserve the confirmed icon artwork occupancy instead of shrinking
+          # the entire source into an artificial 66dp center box.
+          convert "$SRC" -resize 108x108! android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png
+          convert "$SRC" -resize 162x162! android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png
+          convert "$SRC" -resize 216x216! android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png
+          convert "$SRC" -resize 324x324! android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png
+          convert "$SRC" -resize 432x432! android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
+          identify android/app/src/main/res/mipmap-*/ic_launcher_foreground.png
+
+      - name: Update adaptive icon XML
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/ic_launcher_background" />
+              <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+          </adaptive-icon>
+          EOF
+
+      - name: Commit generated adaptive foreground
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add android/app/src/main/res/mipmap-*/ic_launcher_foreground.png android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          if git diff --cached --quiet; then
+            echo "No foreground icon changes."
+            exit 0
+          fi
+          git commit -m "Resize Income adaptive icon foreground"
+          git push origin HEAD:feature/income-foundation
