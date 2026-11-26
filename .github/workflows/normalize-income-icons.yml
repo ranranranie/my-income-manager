@@ -1,0 +1,47 @@
+name: Normalize Income Icons
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  normalize-icons:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/income-foundation
+
+      - name: Install ImageMagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
+
+      - name: Generate launcher icons
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="android/app/launcher_source/my_income_manager_icon_transfer_256.webp"
+          test -f "$SRC"
+          identify "$SRC"
+          mkdir -p android/app/src/main/res/mipmap-mdpi android/app/src/main/res/mipmap-hdpi android/app/src/main/res/mipmap-xhdpi android/app/src/main/res/mipmap-xxhdpi android/app/src/main/res/mipmap-xxxhdpi
+          convert "$SRC" -resize 48x48! android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          convert "$SRC" -resize 72x72! android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          convert "$SRC" -resize 96x96! android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          convert "$SRC" -resize 144x144! android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          convert "$SRC" -resize 192x192! android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          identify android/app/src/main/res/mipmap-*/ic_launcher.png
+
+      - name: Commit generated launcher icons
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add android/app/src/main/res/mipmap-*/ic_launcher.png
+          if git diff --cached --quiet; then
+            echo "No launcher icon changes."
+            exit 0
+          fi
+          git commit -m "Normalize Income launcher icons"
+          git push origin HEAD:feature/income-foundation
