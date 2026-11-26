@@ -24,17 +24,16 @@ jobs:
           SRC="android/app/launcher_source/my_income_manager_icon_transfer_256.webp"
           test -f "$SRC"
           mkdir -p android/app/src/main/res/mipmap-mdpi android/app/src/main/res/mipmap-hdpi android/app/src/main/res/mipmap-xhdpi android/app/src/main/res/mipmap-xxhdpi android/app/src/main/res/mipmap-xxxhdpi
-          make_fg() {
-            canvas="$1"
-            out="$2"
-            safe=$((canvas * 66 / 108))
-            convert "$SRC" -resize "${safe}x${safe}" -gravity center -background none -extent "${canvas}x${canvas}" "$out"
-          }
-          make_fg 108 android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png
-          make_fg 162 android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png
-          make_fg 216 android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png
-          make_fg 324 android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png
-          make_fg 432 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
+
+          # Manager Series adaptive icon structure:
+          # 108dp foreground canvas, density-scaled to 108/162/216/324/432 px.
+          # Preserve the confirmed icon artwork occupancy instead of shrinking
+          # the entire source into an artificial 66dp center box.
+          convert "$SRC" -resize 108x108! android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png
+          convert "$SRC" -resize 162x162! android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png
+          convert "$SRC" -resize 216x216! android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png
+          convert "$SRC" -resize 324x324! android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png
+          convert "$SRC" -resize 432x432! android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
           identify android/app/src/main/res/mipmap-*/ic_launcher_foreground.png
 
       - name: Update adaptive icon XML
