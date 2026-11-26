@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../data/income_database.dart';
 import '../models/income_models.dart';
@@ -52,15 +52,10 @@ class _HistoryPageState extends State<HistoryPage> {
         final normalizedQuery = query.trim().toLowerCase();
 
         final records = allRecords.where((record) {
-          final searchable = (
-            record.type.label +
-            ' ' +
-            (record.source ?? '') +
-            ' ' +
-            (record.account ?? '') +
-            ' ' +
-            (record.memo ?? '')
-          ).toLowerCase();
+          final searchable =
+              '${record.type.label} ${record.source ?? ''} '
+              '${record.account ?? ''} ${record.memo ?? ''}'
+                  .toLowerCase();
           return (filter == null || record.type == filter) &&
               searchable.contains(normalizedQuery);
         }).toList();
@@ -259,7 +254,7 @@ class _MonthSection extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  group.year.toString() + '년 ' + group.month.toString() + '월',
+                  '${group.year}년 ${group.month}월',
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
@@ -267,7 +262,7 @@ class _MonthSection extends StatelessWidget {
                 ),
               ),
               Text(
-                group.records.length.toString() + '건',
+                '${group.records.length}건',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -311,7 +306,7 @@ class _IncomeHistoryRow extends StatelessWidget {
     final account = record.account?.trim();
     final secondary = account == null || account.isEmpty
         ? record.type.label
-        : record.type.label + ' · ' + account;
+        : '${record.type.label} · $account';
     final memo = record.memo?.trim();
 
     return InkWell(
@@ -329,13 +324,11 @@ class _IncomeHistoryRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    record.date.month.toString() +
-                        '.' +
-                        record.date.day.toString(),
+                    '${record.date.month}.${record.date.day}',
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
                   Text(
-                    '(' + _weekdayLabel(record.date.weekday) + ')',
+                    '(${_weekdayLabel(record.date.weekday)})',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
