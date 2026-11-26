@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../data/income_database.dart';
@@ -211,8 +211,6 @@ class _IncomeEditorState extends State<IncomeEditor> {
       if (mounted) setState(() => saving = false);
     }
   }
-
-  Future<bool> _onWillPop() async => !saving;
 
   @override
   Widget build(BuildContext context) {
