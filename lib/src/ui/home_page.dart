@@ -152,7 +152,7 @@ class _HomeContent extends StatelessWidget {
           ),
         ],
         SizedBox(height: sectionGap),
-        _SectionTitle(title: '${year}년 수입 흐름'),
+        _SectionTitle(title: '$year년 수입 흐름'),
         SizedBox(height: compact ? 5 : 7),
         _IncomeFlowChart(
           currentMonth: currentMonth,
@@ -224,7 +224,7 @@ class _Header extends StatelessWidget {
         ),
         SizedBox(height: compact ? 1 : 2),
         Text(
-          '${year}년',
+          '$year년',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
