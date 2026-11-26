@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../data/income_database.dart';
 import '../models/income_models.dart';
 import '../settings/amount_visibility.dart';
@@ -120,7 +120,7 @@ class _YearPicker extends StatelessWidget {
         SizedBox(
           width: 120,
           child: Text(
-            year.toString() + '년',
+            '${year}년',
             textAlign: TextAlign.center,
             style: Theme.of(context)
                 .textTheme
@@ -301,7 +301,7 @@ class _FinancialIncome extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _AmountText(displayWon(financial, showAmounts: showAmounts), style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 3),
-        Text('전체 수입의 '+_percent(IncomeReport.ratio(financial, total)), style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        Text('전체 수입의 ${_percent(IncomeReport.ratio(financial, total))}', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height: 12),
         _CompositionRow(label: '배당', amount: dividend, ratio: IncomeReport.ratio(dividend, total), showAmounts: showAmounts),
         _CompositionRow(label: '이자', amount: interest, ratio: IncomeReport.ratio(interest, total), showAmounts: showAmounts),
@@ -472,7 +472,7 @@ class _SupportingValue extends StatelessWidget {
     return Wrap(spacing: 8, runSpacing: 3, children: [
       Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
       Text(displayWon(amount, showAmounts: showAmounts)),
-      Text('전체의 '+_percent(ratio), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+      Text('전체의 ${_percent(ratio)}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
     ]);
   }
 }
@@ -500,7 +500,7 @@ class _EmptyReport extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 28),
         child: Center(
-          child: Text(year.toString() + '년에 기록된 수입이 없습니다.'),
+          child: Text('${year}년에 기록된 수입이 없습니다.'),
         ),
       ),
     );
@@ -517,14 +517,4 @@ Color _typeColor(IncomeType type) => switch (type) {
   IncomeType.other => const Color(0xff8b8177),
 };
 
-String _won(int amount) {
-  final digits = amount.abs().toString();
-  final buffer = StringBuffer();
-  for (var i = 0; i < digits.length; i++) {
-    if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(',');
-    buffer.write(digits[i]);
-  }
-  return (amount < 0 ? '-' : '') + buffer.toString() + '원';
-}
-
-String _percent(double ratio) => (ratio * 100).toStringAsFixed(1) + '%';
+String _percent(double ratio) => '${(ratio * 100).toStringAsFixed(1)}%';
