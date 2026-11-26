@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../data/income_database.dart';
 import '../models/income_models.dart';
@@ -132,7 +132,7 @@ class _HomeContent extends StatelessWidget {
         Text(
           presentTypes.isEmpty
               ? '올해 기록된 수입이 아직 없어요.'
-              : presentTypes.length.toString() + '가지 유형의 수입이 있어요.',
+              : '${presentTypes.length}가지 유형의 수입이 있어요.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         if (presentTypes.isNotEmpty) ...[
@@ -152,7 +152,7 @@ class _HomeContent extends StatelessWidget {
           ),
         ],
         SizedBox(height: sectionGap),
-        _SectionTitle(title: year.toString() + '년 수입 흐름'),
+        _SectionTitle(title: '${year}년 수입 흐름'),
         SizedBox(height: compact ? 5 : 7),
         _IncomeFlowChart(
           currentMonth: currentMonth,
@@ -224,7 +224,7 @@ class _Header extends StatelessWidget {
         ),
         SizedBox(height: compact ? 1 : 2),
         Text(
-          year.toString() + '년',
+          '${year}년',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -455,12 +455,12 @@ class _RecentIncomeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final date = record.date.month.toString() + '.' + record.date.day.toString();
+    final date = '${record.date.month}.${record.date.day}';
     final source = record.source?.trim();
     final primary = source == null || source.isEmpty ? record.type.label : source;
     final secondary = record.account == null || record.account!.trim().isEmpty
         ? record.type.label
-        : record.type.label + ' · ' + record.account!.trim();
+        : '${record.type.label} · ${record.account!.trim()}';
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: compact ? 3 : 5),
@@ -516,12 +516,3 @@ class _RecentIncomeRow extends StatelessWidget {
   }
 }
 
-String _formatWon(int amount) {
-  final digits = amount.abs().toString();
-  final buffer = StringBuffer();
-  for (var i = 0; i < digits.length; i++) {
-    if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(',');
-    buffer.write(digits[i]);
-  }
-  return (amount < 0 ? '-' : '') + buffer.toString() + '원';
-}
