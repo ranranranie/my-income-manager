@@ -2,6 +2,11 @@ name: Normalize Income Icons
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/income-foundation
+    paths:
+      - '.github/workflows/normalize-income-icons.yml'
 
 permissions:
   contents: write
