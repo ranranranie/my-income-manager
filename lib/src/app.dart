@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'settings/amount_visibility.dart';
 import 'ui/history_page.dart';
 import 'ui/home_page.dart';
