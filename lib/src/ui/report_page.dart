@@ -120,7 +120,7 @@ class _YearPicker extends StatelessWidget {
         SizedBox(
           width: 120,
           child: Text(
-            '${year}년',
+            '$year년',
             textAlign: TextAlign.center,
             style: Theme.of(context)
                 .textTheme
@@ -500,7 +500,7 @@ class _EmptyReport extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 28),
         child: Center(
-          child: Text('${year}년에 기록된 수입이 없습니다.'),
+          child: Text('$year년에 기록된 수입이 없습니다.'),
         ),
       ),
     );
