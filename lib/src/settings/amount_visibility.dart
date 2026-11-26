@@ -32,5 +32,5 @@ String displayWon(int amount, {required bool showAmounts}) {
     if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(',');
     buffer.write(digits[i]);
   }
-  return (amount < 0 ? '-' : '') + buffer.toString() + '원';
+  return '${amount < 0 ? '-' : ''}${buffer}원';
 }
