@@ -101,26 +101,18 @@ class _HistoryPageState extends State<HistoryPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  SizedBox(
-                    height: 38,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        _FilterChip(
-                          label: '전체',
-                          selected: filter == null,
-                          onSelected: () => setState(() => filter = null),
-                        ),
-                        for (final type in IncomeType.values) ...[
-                          const SizedBox(width: 6),
-                          _FilterChip(
-                            label: type.label,
-                            selected: filter == type,
-                            onSelected: () => setState(() => filter = type),
-                          ),
-                        ],
-                      ],
+                  DropdownButtonFormField<IncomeType?>(
+                    initialValue: filter,
+                    isDense: true,
+                    decoration: const InputDecoration(
+                      labelText: '수입 유형',
+                      border: OutlineInputBorder(),
                     ),
+                    items: [
+                      const DropdownMenuItem<IncomeType?>(value: null, child: Text('전체 유형')),
+                      ...IncomeType.values.map((type) => DropdownMenuItem<IncomeType?>(value: type, child: Text(type.label))),
+                    ],
+                    onChanged: (value) => setState(() => filter = value),
                   ),
                 ],
               ),
