@@ -6,6 +6,13 @@ class IncomeDatabase {
   IncomeDatabase._();
   static final instance = IncomeDatabase._();
   static const schemaVersion = 2;
+
+  static Future<void> upgradeSchema(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2 && newVersion >= 2) {
+      await _createManagementTables(db);
+      await _importExistingManagementValues(db);
+    }
+  }
   Database? _database;
 
   Future<Database> get database async => _database ??= await _open();
@@ -19,12 +26,7 @@ class IncomeDatabase {
         await _createRecords(db);
         await _createManagementTables(db);
       },
-      onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion < 2) {
-          await _createManagementTables(db);
-          await _importExistingManagementValues(db);
-        }
-      },
+      onUpgrade: upgradeSchema,
     );
   }
 
@@ -34,12 +36,12 @@ class IncomeDatabase {
     await db.execute('CREATE INDEX idx_income_type ON income_records(type)');
   }
 
-  Future<void> _createManagementTables(Database db) async {
+  static Future<void> _createManagementTables(Database db) async {
     await db.execute('CREATE TABLE IF NOT EXISTS income_sources(id INTEGER PRIMARY KEY AUTOINCREMENT, group_key TEXT NOT NULL, name TEXT NOT NULL COLLATE NOCASE, is_active INTEGER NOT NULL DEFAULT 1, last_used_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(group_key, name))');
     await db.execute('CREATE TABLE IF NOT EXISTS income_accounts(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL COLLATE NOCASE UNIQUE, institution TEXT, is_active INTEGER NOT NULL DEFAULT 1, last_used_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)');
   }
 
-  Future<void> _importExistingManagementValues(Database db) async {
+  static Future<void> _importExistingManagementValues(Database db) async {
     final now = DateTime.now().toIso8601String();
     final rows = await db.query('income_records', columns: ['type', 'source', 'account', 'date']);
     for (final row in rows) {
