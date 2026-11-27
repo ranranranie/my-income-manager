@@ -27,13 +27,14 @@ jobs:
 
           # Manager Series adaptive icon structure:
           # 108dp foreground canvas, density-scaled to 108/162/216/324/432 px.
-          # Preserve the confirmed icon artwork occupancy instead of shrinking
-          # the entire source into an artificial 66dp center box.
-          convert "$SRC" -resize 108x108! android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png
-          convert "$SRC" -resize 162x162! android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png
-          convert "$SRC" -resize 216x216! android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png
-          convert "$SRC" -resize 324x324! android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png
-          convert "$SRC" -resize 432x432! android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
+          # Real-device One UI comparison showed the Income artwork was oversized and clipped.
+          # Keep the 108dp adaptive canvas but scale the confirmed artwork to 78%,
+          # centered on the existing cream background to restore Series margins.
+          convert "$SRC" -resize 84x84! -gravity center -background "#FFF8E8" -extent 108x108 android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png
+          convert "$SRC" -resize 126x126! -gravity center -background "#FFF8E8" -extent 162x162 android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png
+          convert "$SRC" -resize 168x168! -gravity center -background "#FFF8E8" -extent 216x216 android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png
+          convert "$SRC" -resize 252x252! -gravity center -background "#FFF8E8" -extent 324x324 android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png
+          convert "$SRC" -resize 336x336! -gravity center -background "#FFF8E8" -extent 432x432 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
           identify android/app/src/main/res/mipmap-*/ic_launcher_foreground.png
 
       - name: Update adaptive icon XML
