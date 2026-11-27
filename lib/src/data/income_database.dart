@@ -4,6 +4,7 @@ import '../models/income_models.dart';
 
 class IncomeDatabase {
   IncomeDatabase._();
+  IncomeDatabase.forTesting(Database database) : _database = database;
   static final instance = IncomeDatabase._();
   static const schemaVersion = 2;
 
