@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../settings/amount_visibility.dart';
 import '../data/income_database.dart';
