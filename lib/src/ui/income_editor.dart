@@ -31,6 +31,8 @@ class _IncomeEditorState extends State<IncomeEditor> {
   bool amountError = false;
   bool sourceError = false;
   bool accountError = false;
+  List<IncomeSourceEntry> sourceOptions = const [];
+  List<IncomeAccountEntry> accountOptions = const [];
 
   bool get isEditing => widget.record != null;
   bool get sourceRequired => type == IncomeType.dividend;
@@ -56,6 +58,13 @@ class _IncomeEditorState extends State<IncomeEditor> {
       date = record.date;
       memoExpanded = record.memo?.isNotEmpty ?? false;
     }
+    _loadManagedOptions();
+  }
+
+  Future<void> _loadManagedOptions() async {
+    final sources = await IncomeDatabase.instance.sourcesFor(type);
+    final accounts = await IncomeDatabase.instance.accounts();
+    if (mounted) setState(() { sourceOptions = sources; accountOptions = accounts; });
   }
 
   @override
@@ -83,6 +92,7 @@ class _IncomeEditorState extends State<IncomeEditor> {
       type = next;
       if (validationAttempted) _updateErrors();
     });
+    _loadManagedOptions();
   }
 
   void _onAmountChanged(String value) {
@@ -342,6 +352,9 @@ class _IncomeEditorState extends State<IncomeEditor> {
                       accountKey: _accountKey,
                       enabled: !saving,
                       onChanged: _refreshValidation,
+                      sourceOptions: sourceOptions,
+                      accountOptions: accountOptions,
+                      onReload: _loadManagedOptions,
                     ),
                     const _FieldLabel(text: '메모', optional: true),
                     const SizedBox(height: 7),
@@ -424,6 +437,9 @@ class _ConditionalFields extends StatelessWidget {
     required this.accountKey,
     required this.enabled,
     required this.onChanged,
+    required this.sourceOptions,
+    required this.accountOptions,
+    required this.onReload,
   });
 
   final IncomeType type;
@@ -438,6 +454,9 @@ class _ConditionalFields extends StatelessWidget {
   final GlobalKey accountKey;
   final bool enabled;
   final VoidCallback onChanged;
+  final List<IncomeSourceEntry> sourceOptions;
+  final List<IncomeAccountEntry> accountOptions;
+  final Future<void> Function() onReload;
 
   String get sourceLabel => switch (type) {
         IncomeType.salary || IncomeType.bonus => '회사 / Source',
@@ -455,47 +474,101 @@ class _ConditionalFields extends StatelessWidget {
       children: [
         _FieldLabel(text: sourceLabel, required: sourceRequired, optional: !sourceRequired),
         const SizedBox(height: 7),
-        TextField(
+        _ManagedValueField(
           key: sourceKey,
           controller: sourceController,
           enabled: enabled,
-          onChanged: (_) => onChanged(),
-          textInputAction: TextInputAction.next,
-          decoration: InputDecoration(
-            hintText: sourceRequired ? '수입원을 입력하세요.' : '수입원을 입력하세요.',
-            errorText: sourceError ? '수입원을 입력해주세요.' : null,
-            border: const OutlineInputBorder(),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-          ),
+          label: sourceLabel,
+          hint: '등록된 수입처 선택',
+          requiredValue: sourceRequired,
+          error: sourceError ? '수입원을 선택해주세요.' : null,
+          options: sourceOptions.map((e) => e.name).toList(),
+          onChanged: onChanged,
+          onAdd: (name, _) async {
+            await IncomeDatabase.instance.addSource(type, name);
+            sourceController.text = name.trim();
+            await onReload();
+            onChanged();
+          },
         ),
         if (accountVisible) ...[
           const SizedBox(height: 16),
-          _FieldLabel(
-            text: 'Account',
-            required: accountRequired,
-            optional: !accountRequired,
-          ),
-          const SizedBox(height: 7),
-          TextField(
+          _ManagedValueField(
             key: accountKey,
             controller: accountController,
             enabled: enabled,
-            onChanged: (_) => onChanged(),
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              hintText: '일반계좌, ISA, 연금저축, IRP',
-              errorText: accountError ? '계좌를 입력해주세요.' : null,
-              border: const OutlineInputBorder(),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-            ),
+            label: '계좌',
+            hint: '등록된 계좌 선택',
+            requiredValue: accountRequired,
+            error: accountError ? '계좌를 선택해주세요.' : null,
+            options: accountOptions.map((e) => e.name).toList(),
+            onChanged: onChanged,
+            onAdd: (name, institution) async {
+              await IncomeDatabase.instance.addAccount(name, institution);
+              accountController.text = name.trim();
+              await onReload();
+              onChanged();
+            },
+            asksInstitution: true,
           ),
         ],
         const SizedBox(height: 20),
       ],
     );
   }
+}
+
+class _ManagedValueField extends StatelessWidget {
+  const _ManagedValueField({super.key, required this.controller, required this.enabled, required this.label, required this.hint, required this.requiredValue, required this.error, required this.options, required this.onChanged, required this.onAdd, this.asksInstitution = false});
+  final TextEditingController controller;
+  final bool enabled, requiredValue, asksInstitution;
+  final String label, hint;
+  final String? error;
+  final List<String> options;
+  final VoidCallback onChanged;
+  final Future<void> Function(String name, String? institution) onAdd;
+
+  @override Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    _FieldLabel(text: label, required: requiredValue, optional: !requiredValue),
+    const SizedBox(height: 7),
+    InkWell(
+      onTap: !enabled ? null : () async {
+        final selected = await showModalBottomSheet<String>(
+          context: context,
+          isScrollControlled: true,
+          builder: (sheetContext) => SafeArea(child: Padding(
+            padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + MediaQuery.viewInsetsOf(sheetContext).bottom),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Text(label, style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              for (final option in options) ListTile(title: Text(option), onTap: () => Navigator.pop(sheetContext, option)),
+              OutlinedButton.icon(icon: const Icon(Icons.add), label: const Text('새로 등록'), onPressed: () async {
+                final name = TextEditingController();
+                final institution = TextEditingController();
+                final added = await showDialog<bool>(context: sheetContext, builder: (dialogContext) => AlertDialog(
+                  title: Text('$label 등록'),
+                  content: Column(mainAxisSize: MainAxisSize.min, children: [
+                    TextField(controller: name, autofocus: true, decoration: InputDecoration(labelText: asksInstitution ? '계좌 이름' : label)),
+                    if (asksInstitution) ...[const SizedBox(height: 10), TextField(controller: institution, decoration: const InputDecoration(labelText: '금융기관 (선택)'))],
+                  ]),
+                  actions: [TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('취소')), FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('등록'))],
+                ));
+                if (added == true && name.text.trim().isNotEmpty) {
+                  try { await onAdd(name.text, asksInstitution ? institution.text : null); if (sheetContext.mounted) Navigator.pop(sheetContext, name.text.trim()); }
+                  on DatabaseException catch (_) { if (sheetContext.mounted) ScaffoldMessenger.of(sheetContext).showSnackBar(const SnackBar(content: Text('이미 등록된 항목입니다.'))); }
+                }
+              }),
+            ]),
+          )),
+        );
+        if (selected != null) { controller.text = selected; onChanged(); }
+      },
+      child: InputDecorator(
+        decoration: InputDecoration(border: const OutlineInputBorder(), errorText: error, suffixIcon: const Icon(Icons.arrow_drop_down)),
+        child: Text(controller.text.isEmpty ? hint : controller.text, style: controller.text.isEmpty ? TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant) : null),
+      ),
+    ),
+  ]);
 }
 
 class _AmountAction extends StatelessWidget {
