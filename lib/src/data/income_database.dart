@@ -142,6 +142,9 @@ class IncomeDatabase {
   Future<void> setSourceActive(int id, bool active) async =>
       (await database).update('income_sources', {'is_active': active ? 1 : 0, 'updated_at': DateTime.now().toIso8601String()}, where: 'id = ?', whereArgs: [id]);
 
+  // Managed values are intentionally deactivated instead of deleted so
+  // historical income_records keep their source/account text intact.
+
   Future<List<IncomeAccountEntry>> accounts({bool includeInactive = false}) async {
     final rows = await (await database).query('income_accounts', where: includeInactive ? null : 'is_active = 1', orderBy: 'last_used_at IS NULL, last_used_at DESC, name COLLATE NOCASE');
     return rows.map(IncomeAccountEntry.fromMap).toList();
