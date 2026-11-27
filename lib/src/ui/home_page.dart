@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../data/income_database.dart';
 import '../models/income_models.dart';
 import '../settings/amount_visibility.dart';
+import '../report/income_report.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({
@@ -36,6 +37,7 @@ class HomePage extends StatelessWidget {
       future: IncomeDatabase.instance.forYear(year),
       builder: (context, snapshot) {
         final records = snapshot.data ?? const <IncomeRecord>[];
+        final monthRecords = IncomeReport.forMonth(records, year, now.month);
         final presentTypes = IncomeType.values
             .where((type) => records.any((record) => record.type == type))
             .toList();
@@ -76,6 +78,7 @@ class HomePage extends StatelessWidget {
                   year: year,
                   currentMonth: now.month,
                   records: records,
+                  monthRecords: monthRecords,
                   presentTypes: presentTypes,
                   monthlyByType: monthlyByType,
                   monthlyTotals: monthlyTotals,
@@ -98,6 +101,7 @@ class _HomeContent extends StatelessWidget {
     required this.year,
     required this.currentMonth,
     required this.records,
+    required this.monthRecords,
     required this.presentTypes,
     required this.monthlyByType,
     required this.monthlyTotals,
@@ -110,6 +114,7 @@ class _HomeContent extends StatelessWidget {
   final int year;
   final int currentMonth;
   final List<IncomeRecord> records;
+  final List<IncomeRecord> monthRecords;
   final List<IncomeType> presentTypes;
   final List<Map<IncomeType, int>> monthlyByType;
   final List<int> monthlyTotals;
@@ -125,32 +130,11 @@ class _HomeContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Header(year: year, compact: compact),
+        _Header(year: year, month: currentMonth, compact: compact),
         SizedBox(height: sectionGap),
-        _SectionTitle(title: '올해의 수입'),
-        const SizedBox(height: 3),
-        Text(
-          presentTypes.isEmpty
-              ? '올해 기록된 수입이 아직 없어요.'
-              : '${presentTypes.length}가지 유형의 수입이 있어요.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        if (presentTypes.isNotEmpty) ...[
-          SizedBox(height: compact ? 6 : 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: compact ? 3 : 5,
-            children: presentTypes
-                .map(
-                  (type) => _TypeChip(
-                    type: type,
-                    color: HomePage._typeColors[type]!,
-                    compact: compact,
-                  ),
-                )
-                .toList(),
-          ),
-        ],
+        _SectionTitle(title: '이달의 수입'),
+        const SizedBox(height: 7),
+        _MonthlyActivity(records: monthRecords),
         SizedBox(height: sectionGap),
         _SectionTitle(title: '$year년 수입 흐름'),
         SizedBox(height: compact ? 5 : 7),
@@ -204,10 +188,28 @@ class _HomeContent extends StatelessWidget {
   }
 }
 
+class _MonthlyActivity extends StatelessWidget {
+  const _MonthlyActivity({required this.records});
+  final List<IncomeRecord> records;
+  @override Widget build(BuildContext context) {
+    final types = records.map((e) => e.type).toSet().length;
+    final sources = records.map((e) => e.source?.trim()).where((e) => e != null && e!.isNotEmpty).toSet().length;
+    final nonSalary = IncomeReport.nonSalaryRecordCount(records);
+    return Card(margin: EdgeInsets.zero, child: Padding(padding: const EdgeInsets.all(14), child: Wrap(spacing: 22, runSpacing: 12, children: [
+      _ActivityMetric(label: '수입 유형', value: '$types개'),
+      _ActivityMetric(label: '수입처', value: '$sources곳'),
+      _ActivityMetric(label: '기록', value: '${records.length}건'),
+      _ActivityMetric(label: '월급 외', value: '$nonSalary건'),
+    ])));
+  }
+}
+class _ActivityMetric extends StatelessWidget { const _ActivityMetric({required this.label, required this.value}); final String label,value; @override Widget build(BuildContext context)=>SizedBox(width: 62, child: Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(label,style:Theme.of(context).textTheme.labelSmall),const SizedBox(height:3),Text(value,style:Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight:FontWeight.bold))])); }
+
 class _Header extends StatelessWidget {
-  const _Header({required this.year, required this.compact});
+  const _Header({required this.year, required this.month, required this.compact});
 
   final int year;
+  final int month;
   final bool compact;
 
   @override
@@ -224,7 +226,7 @@ class _Header extends StatelessWidget {
         ),
         SizedBox(height: compact ? 1 : 2),
         Text(
-          '$year년',
+          '$year년 $month월',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
