@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_income_manager/src/data/income_database.dart';
+import 'package:my_income_manager/src/models/income_models.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
@@ -62,6 +63,32 @@ void main() {
     expect(sources, hasLength(1));
     expect(sources.single['group_key'], 'company');
     expect(sources.single['name'], '회사A');
+    await db.close();
+  });
+
+  test('renaming managed values updates linked records while deactivation preserves history', () async {
+    final db = await factory.openDatabase(inMemoryDatabasePath);
+    await db.execute('CREATE TABLE income_records(id INTEGER PRIMARY KEY AUTOINCREMENT, amount INTEGER NOT NULL, date TEXT NOT NULL, type TEXT NOT NULL, source TEXT, account TEXT, memo TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)');
+    await IncomeDatabase.upgradeSchema(db, 1, 2);
+    final database = IncomeDatabase.forTesting(db);
+    final now = DateTime(2026, 11, 27);
+    await database.insert(IncomeRecord(amount: 1000, date: now, type: IncomeType.dividend, source: 'ETF A', account: 'ISA', createdAt: now, updatedAt: now));
+
+    final source = (await database.sourcesFor(IncomeType.dividend)).single;
+    final account = (await database.accounts()).single;
+    await database.renameSource(source, 'ETF B');
+    await database.updateAccount(account, '연금저축', '증권사A');
+    await database.setSourceActive(source.id, false);
+    await database.setAccountActive(account.id, false);
+
+    final record = (await database.all()).single;
+    expect(record.source, 'ETF B');
+    expect(record.account, '연금저축');
+    expect(await database.sourcesFor(IncomeType.dividend), isEmpty);
+    expect(await database.accounts(), isEmpty);
+    expect(await database.sourcesFor(IncomeType.dividend, includeInactive: true), hasLength(1));
+    expect(await database.accounts(includeInactive: true), hasLength(1));
+    expect((await database.all()).single.amount, 1000);
     await db.close();
   });
 }
