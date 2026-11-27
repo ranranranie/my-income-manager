@@ -1,6 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../settings/amount_visibility.dart';
+import '../data/income_database.dart';
+import '../models/income_models.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, required this.amountVisibility});
@@ -23,6 +25,14 @@ class SettingsPage extends StatelessWidget {
           trailing: Switch(value: amountVisibility.showAmounts, onChanged: amountVisibility.setShowAmounts),
         ),
       )),
+      const SizedBox(height: 22),
+      const _SectionTitle('수입 관리'),
+      const SizedBox(height: 8),
+      Card(margin: EdgeInsets.zero, child: Column(children: [
+        _Row(icon: Icons.business_outlined, title: '수입처 관리', subtitle: '유형별 수입처를 등록하고 관리합니다.', trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _SourceManagementPage()))),
+        const Divider(height: 1),
+        _Row(icon: Icons.account_balance_outlined, title: '계좌 관리', subtitle: '배당·이자 계좌를 등록하고 관리합니다.', trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _AccountManagementPage()))),
+      ])),
       const SizedBox(height: 22),
       const _SectionTitle('데이터 관리'),
       const SizedBox(height: 8),
@@ -53,13 +63,14 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _Row extends StatelessWidget {
-  const _Row({required this.icon, required this.title, required this.subtitle, this.trailing});
+  const _Row({required this.icon, required this.title, required this.subtitle, this.trailing, this.onTap});
   final IconData icon;
   final String title;
   final String subtitle;
   final Widget? trailing;
+  final VoidCallback? onTap;
 
-  @override Widget build(BuildContext context) => Padding(
+  @override Widget build(BuildContext context) => InkWell(onTap: onTap, child: Padding(
     padding: const EdgeInsets.all(14),
     child: Row(children: [
       Container(
@@ -75,5 +86,68 @@ class _Row extends StatelessWidget {
       ])),
       if (trailing != null) ...[const SizedBox(width: 8), trailing!],
     ]),
-  );
+  ));
 }
+
+
+class _SourceManagementPage extends StatefulWidget {
+  const _SourceManagementPage();
+  @override State<_SourceManagementPage> createState() => _SourceManagementPageState();
+}
+class _SourceManagementPageState extends State<_SourceManagementPage> {
+  @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('수입처 관리')), body: FutureBuilder<List<IncomeSourceEntry>>(
+    future: IncomeDatabase.instance.allSources(),
+    builder: (context, snapshot) {
+      final items = snapshot.data ?? const [];
+      return ListView(padding: const EdgeInsets.all(18), children: [
+        for (final group in ['company','dividend','interest','sideJob','appTech','other']) ...[
+          _SectionTitle(_sourceGroupLabel(group)),
+          const SizedBox(height: 6),
+          Card(margin: const EdgeInsets.only(bottom: 16), child: Column(children: [
+            for (final item in items.where((e) => e.groupKey == group))
+              ListTile(title: Text(item.name), subtitle: Text(item.isActive ? '사용 중' : '비활성'), trailing: Switch(value: item.isActive, onChanged: (v) async { await IncomeDatabase.instance.setSourceActive(item.id, v); setState(() {}); }), onTap: () => _renameSource(context, item)),
+            ListTile(leading: const Icon(Icons.add), title: const Text('새 수입처 등록'), onTap: () => _addSource(context, group)),
+          ])),
+        ],
+      ]);
+    },
+  ));
+
+  Future<void> _addSource(BuildContext context, String group) async {
+    final controller = TextEditingController();
+    final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(title: Text('${_sourceGroupLabel(group)} 등록'), content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(labelText: '이름')), actions: [TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('취소')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('등록'))]));
+    if (ok == true && controller.text.trim().isNotEmpty) {
+      try { await IncomeDatabase.instance.addSource(_typeForGroup(group), controller.text); setState(() {}); }
+      on DatabaseException catch (_) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('이미 등록된 수입처입니다.'))); }
+    }
+  }
+  Future<void> _renameSource(BuildContext context, IncomeSourceEntry item) async {
+    final controller = TextEditingController(text:item.name);
+    final ok = await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('수입처 이름 수정'),content:TextField(controller:controller,autofocus:true),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('취소')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('저장'))]));
+    if(ok==true && controller.text.trim().isNotEmpty){try{await IncomeDatabase.instance.renameSource(item,controller.text);setState((){});}on DatabaseException catch(_){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('이미 등록된 수입처입니다.')));}}
+  }
+}
+
+class _AccountManagementPage extends StatefulWidget {
+  const _AccountManagementPage();
+  @override State<_AccountManagementPage> createState()=>_AccountManagementPageState();
+}
+class _AccountManagementPageState extends State<_AccountManagementPage>{
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('계좌 관리')),body:FutureBuilder<List<IncomeAccountEntry>>(future:IncomeDatabase.instance.accounts(includeInactive:true),builder:(context,snapshot){
+    final items=snapshot.data??const[];
+    return ListView(padding:const EdgeInsets.all(18),children:[
+      Card(margin:EdgeInsets.zero,child:Column(children:[
+        for(final item in items) ListTile(title:Text(item.name),subtitle:Text([if(item.institution?.isNotEmpty==true)item.institution!,item.isActive?'사용 중':'비활성'].join(' · ')),trailing:Switch(value:item.isActive,onChanged:(v)async{await IncomeDatabase.instance.setAccountActive(item.id,v);setState((){});}),onTap:()=>_edit(context,item)),
+        ListTile(leading:const Icon(Icons.add),title:const Text('새 계좌 등록'),onTap:()=>_edit(context,null)),
+      ]))
+    ]);
+  }));
+  Future<void> _edit(BuildContext context,IncomeAccountEntry? item)async{
+    final name=TextEditingController(text:item?.name??'');final institution=TextEditingController(text:item?.institution??'');
+    final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:Text(item==null?'계좌 등록':'계좌 수정'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:name,autofocus:true,decoration:const InputDecoration(labelText:'계좌 이름')),const SizedBox(height:10),TextField(controller:institution,decoration:const InputDecoration(labelText:'금융기관 (선택)'))]),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('취소')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('저장'))]));
+    if(ok==true&&name.text.trim().isNotEmpty){try{if(item==null){await IncomeDatabase.instance.addAccount(name.text,institution.text);}else{await IncomeDatabase.instance.updateAccount(item,name.text,institution.text);}setState((){});}on DatabaseException catch(_){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('이미 등록된 계좌입니다.')));}}
+  }
+}
+
+String _sourceGroupLabel(String group)=>switch(group){'company'=>'급여·상여','dividend'=>'배당','interest'=>'이자','sideJob'=>'부업','appTech'=>'앱테크',_=>'기타'};
+IncomeType _typeForGroup(String group)=>switch(group){'company'=>IncomeType.salary,'dividend'=>IncomeType.dividend,'interest'=>IncomeType.interest,'sideJob'=>IncomeType.sideJob,'appTech'=>IncomeType.appTech,_=>IncomeType.other};
