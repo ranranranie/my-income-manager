@@ -15,6 +15,20 @@ class IncomeReport {
     return months == 0 ? 0 : total(list) ~/ months;
   }
 
+  static Map<int, int> totalsByMonth(Iterable<IncomeRecord> records) {
+    final result = <int, int>{for (var month = 1; month <= 12; month++) month: 0};
+    for (final record in records) {
+      result[record.date.month] = (result[record.date.month] ?? 0) + record.amount;
+    }
+    return result;
+  }
+
+  static List<IncomeRecord> forMonth(Iterable<IncomeRecord> records, int year, int month) =>
+      records.where((record) => record.date.year == year && record.date.month == month).toList();
+
+  static int nonSalaryRecordCount(Iterable<IncomeRecord> records) =>
+      records.where((record) => record.type != IncomeType.salary && record.type != IncomeType.bonus).length;
+
   static Map<IncomeType, int> byType(Iterable<IncomeRecord> records) {
     final result = <IncomeType, int>{};
     for (final record in records) {
