@@ -75,6 +75,8 @@ class _ReportPageState extends State<ReportPage> {
             else ...[
               _AnnualSummary(records: selectedRecords, showAmounts: widget.showAmounts),
               const SizedBox(height: 18),
+              _MonthlyIncomeChart(records: selectedRecords, showAmounts: widget.showAmounts),
+              const SizedBox(height: 18),
               _TypeComposition(records: selectedRecords, showAmounts: widget.showAmounts),
               const SizedBox(height: 18),
               _SourceComposition(records: selectedRecords, showAmounts: widget.showAmounts),
@@ -166,6 +168,22 @@ class _AnnualSummary extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _MonthlyIncomeChart extends StatelessWidget {
+  const _MonthlyIncomeChart({required this.records, required this.showAmounts});
+  final List<IncomeRecord> records;
+  final bool showAmounts;
+  @override Widget build(BuildContext context) {
+    final values=IncomeReport.totalsByMonth(records);
+    final max=values.values.fold<int>(0,(m,v)=>v>m?v:m);
+    return _ReportSection(title:'월별 수입 흐름',child:SizedBox(height:190,child:Row(crossAxisAlignment:CrossAxisAlignment.end,children:[
+      for(var month=1;month<=12;month++) Expanded(child:Tooltip(message:showAmounts?'${month}월 · ${displayWon(values[month]??0,showAmounts:true)}':'${month}월 · 금액 숨김',child:Column(mainAxisAlignment:MainAxisAlignment.end,children:[
+        Expanded(child:Align(alignment:Alignment.bottomCenter,child:FractionallySizedBox(widthFactor:.58,heightFactor:max==0?0:((values[month]??0)/max).clamp(.04,1.0).toDouble(),child:DecoratedBox(decoration:BoxDecoration(color:Theme.of(context).colorScheme.primary,borderRadius:BorderRadius.circular(5)))))),
+        const SizedBox(height:6),Text('$month',style:Theme.of(context).textTheme.labelSmall),
+      ]))),
+    ])));
   }
 }
 
@@ -316,49 +334,23 @@ class _IncomeHistory extends StatelessWidget {
   const _IncomeHistory({required this.records, required this.showAmounts});
   final List<IncomeRecord> records;
   final bool showAmounts;
-
-  @override
-  Widget build(BuildContext context) {
-    final yearly = IncomeReport.totalsByYear(records).entries.toList()..sort((a, b) => a.key.compareTo(b.key));
-    final cumulative = IncomeReport.total(records);
-    final maxYearly = yearly.fold<int>(0, (max, entry) => entry.value > max ? entry.value : max);
-
-    return _ReportSection(
-      title: '수입의 역사',
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('연도별 총수입', style: Theme.of(context).textTheme.labelLarge),
-        const SizedBox(height: 10),
-        for (final entry in yearly) _HistoryRow(year: entry.key, amount: entry.value, fraction: maxYearly == 0 ? 0 : entry.value / maxYearly, showAmounts: showAmounts),
-        const Divider(height: 26),
-        Text('기록 시작 후 누적 수입', style: Theme.of(context).textTheme.labelLarge),
-        const SizedBox(height: 5),
-        _AmountText(displayWon(cumulative, showAmounts: showAmounts), style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
-      ]),
-    );
-  }
-}
-
-class _HistoryRow extends StatelessWidget {
-  const _HistoryRow({required this.year, required this.amount, required this.fraction, required this.showAmounts});
-  final int year;
-  final int amount;
-  final double fraction;
-  final bool showAmounts;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
-      child: Column(children: [
-        Row(children: [
-          Text(year.toString(), style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(width: 12),
-          Expanded(child: _AmountText(displayWon(amount, showAmounts: showAmounts), textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodyMedium)),
-        ]),
-        const SizedBox(height: 6),
-        ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(minHeight: 8, value: fraction.clamp(0.0, 1.0).toDouble())),
-      ]),
-    );
+  @override Widget build(BuildContext context) {
+    final yearly=IncomeReport.totalsByYear(records).entries.toList()..sort((a,b)=>a.key.compareTo(b.key));
+    final maxYearly=yearly.fold<int>(0,(m,e)=>e.value>m?e.value:m);
+    final currentYear=DateTime.now().year;
+    return _ReportSection(title:'수입의 역사',child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+      SingleChildScrollView(scrollDirection:Axis.horizontal,child:SizedBox(height:190,width:math.max(300,yearly.length*72.0),child:Row(crossAxisAlignment:CrossAxisAlignment.end,children:[
+        for(final entry in yearly) SizedBox(width:72,child:Column(mainAxisAlignment:MainAxisAlignment.end,children:[
+          _AmountText(displayWon(entry.value,showAmounts:showAmounts),textAlign:TextAlign.center,style:Theme.of(context).textTheme.labelSmall),
+          const SizedBox(height:5),
+          Expanded(child:Align(alignment:Alignment.bottomCenter,child:FractionallySizedBox(widthFactor:.58,heightFactor:maxYearly==0?0:(entry.value/maxYearly).clamp(.06,1.0).toDouble(),child:DecoratedBox(decoration:BoxDecoration(color:entry.key==currentYear?Theme.of(context).colorScheme.primary:Theme.of(context).colorScheme.primary.withValues(alpha:.35),borderRadius:BorderRadius.circular(5)))))),
+          const SizedBox(height:6),Text('${entry.key}',style:Theme.of(context).textTheme.labelSmall),
+        ])),
+      ]))),
+      const Divider(height:26),
+      Text('기록 시작 후 누적 수입',style:Theme.of(context).textTheme.labelLarge),const SizedBox(height:5),
+      _AmountText(displayWon(IncomeReport.total(records),showAmounts:showAmounts),style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w600)),
+    ]));
   }
 }
 
