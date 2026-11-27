@@ -180,7 +180,7 @@ class _MonthlyIncomeChart extends StatelessWidget {
     final max=values.values.fold<int>(0,(m,v)=>v>m?v:m);
     return _ReportSection(title:'월별 수입 흐름',child:SizedBox(height:190,child:Row(crossAxisAlignment:CrossAxisAlignment.end,children:[
       for(var month=1;month<=12;month++) Expanded(child:Tooltip(message:showAmounts?'${month}월 · ${displayWon(values[month]??0,showAmounts:true)}':'${month}월 · 금액 숨김',child:Column(mainAxisAlignment:MainAxisAlignment.end,children:[
-        Expanded(child:Align(alignment:Alignment.bottomCenter,child:FractionallySizedBox(widthFactor:.58,heightFactor:max==0?0:((values[month]??0)/max).clamp(.04,1.0).toDouble(),child:DecoratedBox(decoration:BoxDecoration(color:Theme.of(context).colorScheme.primary,borderRadius:BorderRadius.circular(5)))))),
+        Expanded(child:Align(alignment:Alignment.bottomCenter,child:FractionallySizedBox(widthFactor:.58,heightFactor:max==0?0.0:((values[month]??0)/max).clamp(.04,1.0).toDouble(),child:DecoratedBox(decoration:BoxDecoration(color:Theme.of(context).colorScheme.primary,borderRadius:BorderRadius.circular(5)))))),
         const SizedBox(height:6),Text('$month',style:Theme.of(context).textTheme.labelSmall),
       ]))),
     ])));
@@ -339,11 +339,11 @@ class _IncomeHistory extends StatelessWidget {
     final maxYearly=yearly.fold<int>(0,(m,e)=>e.value>m?e.value:m);
     final currentYear=DateTime.now().year;
     return _ReportSection(title:'수입의 역사',child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-      SingleChildScrollView(scrollDirection:Axis.horizontal,child:SizedBox(height:190,width:math.max(300,yearly.length*72.0),child:Row(crossAxisAlignment:CrossAxisAlignment.end,children:[
+      SingleChildScrollView(scrollDirection:Axis.horizontal,child:SizedBox(height:190,width:math.max(300.0,yearly.length*72.0),child:Row(crossAxisAlignment:CrossAxisAlignment.end,children:[
         for(final entry in yearly) SizedBox(width:72,child:Column(mainAxisAlignment:MainAxisAlignment.end,children:[
           _AmountText(displayWon(entry.value,showAmounts:showAmounts),textAlign:TextAlign.center,style:Theme.of(context).textTheme.labelSmall),
           const SizedBox(height:5),
-          Expanded(child:Align(alignment:Alignment.bottomCenter,child:FractionallySizedBox(widthFactor:.58,heightFactor:maxYearly==0?0:(entry.value/maxYearly).clamp(.06,1.0).toDouble(),child:DecoratedBox(decoration:BoxDecoration(color:entry.key==currentYear?Theme.of(context).colorScheme.primary:Theme.of(context).colorScheme.primary.withValues(alpha:.35),borderRadius:BorderRadius.circular(5)))))),
+          Expanded(child:Align(alignment:Alignment.bottomCenter,child:FractionallySizedBox(widthFactor:.58,heightFactor:maxYearly==0?0.0:(entry.value/maxYearly).clamp(.06,1.0).toDouble(),child:DecoratedBox(decoration:BoxDecoration(color:entry.key==currentYear?Theme.of(context).colorScheme.primary:Theme.of(context).colorScheme.primary.withValues(alpha:.35),borderRadius:BorderRadius.circular(5)))))),
           const SizedBox(height:6),Text('${entry.key}',style:Theme.of(context).textTheme.labelSmall),
         ])),
       ]))),
