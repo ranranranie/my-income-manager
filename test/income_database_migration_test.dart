@@ -25,10 +25,15 @@ void main() {
 
     final records = await db.query('income_records');
     expect(records, hasLength(1));
+    expect(records.single['id'], 1);
+    expect(records.single['date'], '2026-11-01T00:00:00.000');
+    expect(records.single['type'], 'dividend');
     expect(records.single['amount'], 120000);
     expect(records.single['source'], 'ETF A');
     expect(records.single['account'], 'ISA');
     expect(records.single['memo'], '기존 기록');
+    expect(records.single['created_at'], '2026-11-01T00:00:00.000');
+    expect(records.single['updated_at'], '2026-11-01T00:00:00.000');
 
     final sources = await db.query('income_sources');
     expect(sources, hasLength(1));
@@ -89,6 +94,7 @@ void main() {
     expect(await database.sourcesFor(IncomeType.dividend, includeInactive: true), hasLength(1));
     expect(await database.accounts(includeInactive: true), hasLength(1));
     expect((await database.all()).single.amount, 1000);
+    expect((await database.all()).single.date, now);
     await db.close();
   });
 }
