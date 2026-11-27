@@ -30,7 +30,7 @@ class IncomeDatabase {
     );
   }
 
-  Future<void> _createRecords(Database db) async {
+  static Future<void> _createRecords(Database db) async {
     await db.execute('CREATE TABLE income_records(id INTEGER PRIMARY KEY AUTOINCREMENT, amount INTEGER NOT NULL, date TEXT NOT NULL, type TEXT NOT NULL, source TEXT, account TEXT, memo TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)');
     await db.execute('CREATE INDEX idx_income_date ON income_records(date DESC)');
     await db.execute('CREATE INDEX idx_income_type ON income_records(type)');
