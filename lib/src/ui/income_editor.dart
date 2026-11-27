@@ -91,6 +91,8 @@ class _IncomeEditorState extends State<IncomeEditor> {
     if (saving || next == type) return;
     setState(() {
       type = next;
+      source.clear();
+      account.clear();
       if (validationAttempted) _updateErrors();
     });
     _loadManagedOptions();
@@ -540,6 +542,7 @@ class _ManagedValueField extends StatelessWidget {
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               Text(label, style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
+              if (!requiredValue && controller.text.isNotEmpty) ListTile(leading: const Icon(Icons.clear), title: const Text('선택 안 함'), onTap: () => Navigator.pop(sheetContext, '')),
               for (final option in options) ListTile(title: Text(option), onTap: () => Navigator.pop(sheetContext, option)),
               OutlinedButton.icon(icon: const Icon(Icons.add), label: const Text('새로 등록'), onPressed: () async {
                 final name = TextEditingController();
