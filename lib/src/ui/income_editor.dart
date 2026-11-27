@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:flutter/services.dart';
 
 import '../data/income_database.dart';
@@ -472,8 +473,6 @@ class _ConditionalFields extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _FieldLabel(text: sourceLabel, required: sourceRequired, optional: !sourceRequired),
-        const SizedBox(height: 7),
         _ManagedValueField(
           key: sourceKey,
           controller: sourceController,
