@@ -106,15 +106,15 @@ class _SourceManagementPageState extends State<_SourceManagementPage> {
           const SizedBox(height: 6),
           Card(margin: const EdgeInsets.only(bottom: 16), child: Column(children: [
             for (final item in items.where((e) => e.groupKey == group))
-              ListTile(title: Text(item.name), subtitle: Text(item.isActive ? '사용 중' : '비활성'), trailing: Switch(value: item.isActive, onChanged: (v) async { await IncomeDatabase.instance.setSourceActive(item.id, v); setState(() {}); }), onTap: () => _renameSource(context, item)),
-            ListTile(leading: const Icon(Icons.add), title: const Text('새 수입처 등록'), onTap: () => _addSource(context, group)),
+              ListTile(title: Text(item.name), subtitle: Text(item.isActive ? '사용 중' : '비활성'), trailing: Switch(value: item.isActive, onChanged: (v) async { await IncomeDatabase.instance.setSourceActive(item.id, v); setState(() {}); }), onTap: () => _renameSource(item)),
+            ListTile(leading: const Icon(Icons.add), title: const Text('새 수입처 등록'), onTap: () => _addSource(group)),
           ])),
         ],
       ]);
     },
   ));
 
-  Future<void> _addSource(BuildContext context, String group) async {
+  Future<void> _addSource(String group) async {
     final controller = TextEditingController();
     final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(title: Text('${_sourceGroupLabel(group)} 등록'), content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(labelText: '이름')), actions: [TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('취소')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('등록'))]));
     if (ok == true && controller.text.trim().isNotEmpty) {
@@ -122,7 +122,7 @@ class _SourceManagementPageState extends State<_SourceManagementPage> {
       on DatabaseException catch (_) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('이미 등록된 수입처입니다.'))); }
     }
   }
-  Future<void> _renameSource(BuildContext context, IncomeSourceEntry item) async {
+  Future<void> _renameSource(IncomeSourceEntry item) async {
     final controller = TextEditingController(text:item.name);
     final ok = await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('수입처 이름 수정'),content:TextField(controller:controller,autofocus:true),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('취소')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('저장'))]));
     if(ok==true && controller.text.trim().isNotEmpty){try{await IncomeDatabase.instance.renameSource(item,controller.text);setState((){});}on DatabaseException catch(_){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('이미 등록된 수입처입니다.')));}}
@@ -138,12 +138,12 @@ class _AccountManagementPageState extends State<_AccountManagementPage>{
     final items=snapshot.data??const[];
     return ListView(padding:const EdgeInsets.all(18),children:[
       Card(margin:EdgeInsets.zero,child:Column(children:[
-        for(final item in items) ListTile(title:Text(item.name),subtitle:Text([if(item.institution?.isNotEmpty==true)item.institution!,item.isActive?'사용 중':'비활성'].join(' · ')),trailing:Switch(value:item.isActive,onChanged:(v)async{await IncomeDatabase.instance.setAccountActive(item.id,v);setState((){});}),onTap:()=>_edit(context,item)),
-        ListTile(leading:const Icon(Icons.add),title:const Text('새 계좌 등록'),onTap:()=>_edit(context,null)),
+        for(final item in items) ListTile(title:Text(item.name),subtitle:Text([if(item.institution?.isNotEmpty==true)item.institution!,item.isActive?'사용 중':'비활성'].join(' · ')),trailing:Switch(value:item.isActive,onChanged:(v)async{await IncomeDatabase.instance.setAccountActive(item.id,v);setState((){});}),onTap:()=>_edit(item)),
+        ListTile(leading:const Icon(Icons.add),title:const Text('새 계좌 등록'),onTap:()=>_edit(null)),
       ]))
     ]);
   }));
-  Future<void> _edit(BuildContext context,IncomeAccountEntry? item)async{
+  Future<void> _edit(IncomeAccountEntry? item)async{
     final name=TextEditingController(text:item?.name??'');final institution=TextEditingController(text:item?.institution??'');
     final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:Text(item==null?'계좌 등록':'계좌 수정'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:name,autofocus:true,decoration:const InputDecoration(labelText:'계좌 이름')),const SizedBox(height:10),TextField(controller:institution,decoration:const InputDecoration(labelText:'금융기관 (선택)'))]),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('취소')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('저장'))]));
     if(ok==true&&name.text.trim().isNotEmpty){try{if(item==null){await IncomeDatabase.instance.addAccount(name.text,institution.text);}else{await IncomeDatabase.instance.updateAccount(item,name.text,institution.text);}setState((){});}on DatabaseException catch(_){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('이미 등록된 계좌입니다.')));}}
