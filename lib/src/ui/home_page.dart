@@ -193,7 +193,7 @@ class _MonthlyActivity extends StatelessWidget {
   final List<IncomeRecord> records;
   @override Widget build(BuildContext context) {
     final types = records.map((e) => e.type).toSet().length;
-    final sources = records.map((e) => e.source?.trim()).where((e) => e != null && e!.isNotEmpty).toSet().length;
+    final sources = records.map((e) => e.source?.trim()).where((e) => e != null && e.isNotEmpty).toSet().length;
     final nonSalary = IncomeReport.nonSalaryRecordCount(records);
     return Card(margin: EdgeInsets.zero, child: Padding(padding: const EdgeInsets.all(14), child: Wrap(spacing: 22, runSpacing: 12, children: [
       _ActivityMetric(label: '수입 유형', value: '$types개'),
@@ -248,33 +248,6 @@ class _SectionTitle extends StatelessWidget {
           .textTheme
           .titleMedium
           ?.copyWith(fontWeight: FontWeight.bold),
-    );
-  }
-}
-
-class _TypeChip extends StatelessWidget {
-  const _TypeChip({
-    required this.type,
-    required this.color,
-    required this.compact,
-  });
-
-  final IncomeType type;
-  final Color color;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 8 : 10,
-        vertical: compact ? 3 : 4,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.11),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(type.label, style: Theme.of(context).textTheme.labelMedium),
     );
   }
 }
