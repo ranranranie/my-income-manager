@@ -179,7 +179,7 @@ class _MonthlyIncomeChart extends StatelessWidget {
     final values=IncomeReport.totalsByMonth(records);
     final max=values.values.fold<int>(0,(m,v)=>v>m?v:m);
     return _ReportSection(title:'월별 수입 흐름',child:SizedBox(height:190,child:Row(crossAxisAlignment:CrossAxisAlignment.end,children:[
-      for(var month=1;month<=12;month++) Expanded(child:Tooltip(message:showAmounts?'${month}월 · ${displayWon(values[month]??0,showAmounts:true)}':'${month}월 · 금액 숨김',child:Column(mainAxisAlignment:MainAxisAlignment.end,children:[
+      for(var month=1;month<=12;month++) Expanded(child:Tooltip(message:showAmounts?'$month월 · ${displayWon(values[month]??0,showAmounts:true)}':'$month월 · 금액 숨김',child:Column(mainAxisAlignment:MainAxisAlignment.end,children:[
         Expanded(child:Align(alignment:Alignment.bottomCenter,child:FractionallySizedBox(widthFactor:.58,heightFactor:max==0?0.0:((values[month]??0)/max).clamp(.04,1.0).toDouble(),child:DecoratedBox(decoration:BoxDecoration(color:Theme.of(context).colorScheme.primary,borderRadius:BorderRadius.circular(5)))))),
         const SizedBox(height:6),Text('$month',style:Theme.of(context).textTheme.labelSmall),
       ]))),
