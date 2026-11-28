@@ -344,7 +344,7 @@ class _IncomeHistory extends StatelessWidget {
           _AmountText(displayWon(entry.value,showAmounts:showAmounts),textAlign:TextAlign.center,style:Theme.of(context).textTheme.labelSmall),
           const SizedBox(height:5),
           Expanded(child:Align(alignment:Alignment.bottomCenter,child:FractionallySizedBox(widthFactor:.58,heightFactor:maxYearly==0?0.0:(entry.value/maxYearly).clamp(.06,1.0).toDouble(),child:DecoratedBox(decoration:BoxDecoration(color:entry.key==currentYear?Theme.of(context).colorScheme.primary:Theme.of(context).colorScheme.primary.withValues(alpha:.35),borderRadius:BorderRadius.circular(5)))))),
-          const SizedBox(height:6),Text('${entry.key}',style:Theme.of(context).textTheme.labelSmall),
+          const SizedBox(height:6),Text('$entry.key',style:Theme.of(context).textTheme.labelSmall),
         ])),
       ]))),
       const Divider(height:26),
